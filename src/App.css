@@ -1,38 +1,121 @@
+
 .App {
-  text-align: center;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+
 }
 
-.App-logo {
-  height: 40vmin;
+
+.track-list
+{
+  margin-left: auto;
+  width: 500px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 0px;
+}
+
+.track-item
+{
+  padding: 0px 60px;
+  height: 114px;
+}
+
+.track-item.loading {
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.track-item.loading .track-title {
+  min-width: unset;
+  background-color: #494949;
+  color: transparent;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.track-content
+{
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.track-image
+{
+  width: 80px;
+  height: 80px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  display: flex;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  align-items: center;
+  background-color: #494949;
 }
 
-.App-link {
-  color: #61dafb;
+.track-info
+{
+  overflow: hidden;
+  flex-grow: 1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.track-title-wrapper
+{
+  position: relative;
+  overflow: hidden;
+  width: 230px;
+  height: 24px;
+}
+.track-title
+{
+  position: absolute;
+  white-space: nowrap;
+  overflow: hidden;
+  transform: translateX(0);
+  transition: 1s;
+  min-width: 100%;
+  opacity: 1;
+}
+
+.track-title:hover
+{
+    animation-name:title-scroll;
+    animation-duration:6s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@keyframes title-scroll
+{
+  0% {
+    opacity: 1;
+    transform: translateX(0px);
   }
-  to {
-    transform: rotate(360deg);
+
+  10% {
+    opacity: 1;
+    transform: translateX(0px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(calc(230px - 100%));
+  }
+
+  83% {
+    opacity: 1;
+    transform: translateX(calc(230px - 100%));
+  }
+  87% {
+    opacity: 0;
+    transform: translateX(calc(230px - 100%));
+  }
+  93% {
+    transform:translateX(0px);
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px);
   }
 }
