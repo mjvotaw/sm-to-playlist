@@ -1,21 +1,10 @@
-import { SpotifyApi, Track as SpotifyTrack } from '@spotify/web-api-ts-sdk';
+import { Playlist, SpotifyApi, Track as SpotifyTrack, TrackItem } from '@spotify/web-api-ts-sdk';
 import gestaltSimilarity from "gestalt-pattern-matcher";
 import { SmSongInfo } from '../types/SmFile';
+import { Track } from '../types/Track';
 
 const client_id = "4872953cacaa437d9e7f5393df0ef2dd";
 const redirect_url = 'http://localhost:3000';
-
-export interface Track
-{
-    name: string;
-    artist: string;
-    similarityScore: number;
-    previewAudioUrl: string | null;
-    popularityStore: number;
-    duration: number;
-    imageUrl: string | null;
-    
-};
 
 
 export class SpotifySearch
@@ -58,6 +47,22 @@ export class SpotifySearch
         return tracks;
     }
 
+    async createPlaylist(playlistName: string, isPrivate: boolean, tracks: Track[]): Promise<Playlist<TrackItem>>
+    {
+        let user = await this.api.currentUser.profile();
+
+        let track_chunks = this.chunkTracks(tracks, 100);
+        let playlist = await this.api.playlists.createPlaylist(user.id, { name: playlistName, public: !isPrivate });
+        for (let chunk of track_chunks)
+        {
+            let uris = chunk.map((t) => t.uri);
+            await this.api.playlists.addItemsToPlaylist(playlist.id, uris);    
+        }
+
+        playlist = await this.api.playlists.getPlaylist(playlist.id);
+        return playlist;   
+    }
+
     private async search(title: string, subtitle: string, artist: string, scoreCutoff: number): Promise<Track[]>
     {
         let results = await this.api.search(`${title} ${subtitle}, ${artist}`, ["track"]);
@@ -74,6 +79,7 @@ export class SpotifySearch
                 previewAudioUrl: track.preview_url,
                 duration: track.duration_ms,
                 imageUrl: imageUrl,
+                uri: track.uri,
 
             };
             return t;
@@ -96,18 +102,26 @@ export class SpotifySearch
         return tracks;
     }
 
-    scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artist: string): number
+    private scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artist: string): number
     {
         let item_title = track.name;
         let item_artist = track.artists.map(a => a.name).join(", ");
         return this.score(item_title, item_artist, searched_title, searched_subtitle, searched_artist);
     }
 
-    score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): number
+    private score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): number
     {
         // let wholeScore = gestaltSimilarity(`${item_title} ${item_artist}`, `${searched_title} ${searched_subtitle} ${searched_artist}`);
         let trackScore = gestaltSimilarity(item_title, searched_title);
         let artistScore = gestaltSimilarity(item_artist, searched_artist);
         return (trackScore * this.TITLE_WEIGHT) + (artistScore * this.ARTIST_WEIGHT);
+    }
+
+    chunkTracks(tracks:Track[], size: number): Track[][] {
+        const chunks: Track[][] = [];
+        while (tracks.length > 0) {
+            chunks.push(tracks.splice(0, size));
+        }
+        return chunks;
     }
 }

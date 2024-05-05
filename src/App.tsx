@@ -3,13 +3,14 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import "./App.css";
-import { Container, Grid, Stack } from "@mui/material";
-import { Track, SpotifySearch } from "./search/SpotifySearch";
-import Carousel from 'react-material-ui-carousel';
-import { TrackDisplayItem } from "./components/TrackDisplayItem";
+import { Container, CircularProgress, Button } from "@mui/material";
+import { SpotifySearch } from "./search/SpotifySearch";
 import { SmFileDropZone } from "./components/SmFileDropZone";
 import { SmSongInfo } from "./types/SmFile";
 import { TrackSelector } from "./components/TrackSelector";
+import { CreatePlaylistPopup } from "./components/CreatePlaylistPopup";
+import { Playlist } from "@spotify/web-api-ts-sdk";
+import { Track, TrackSet } from './types/Track';
 
 const darkTheme = createTheme({
   palette: {
@@ -20,10 +21,15 @@ const darkTheme = createTheme({
 function App()
 {
   const search = new SpotifySearch();
-  const [displayTracks, setDisplayTracks] = React.useState<{ tracks: Track[], songInfo: SmSongInfo }[]>([]);
+  const [trackSets, setTrackSets] = React.useState<TrackSet[]>([]);
   const [songQueue, setSongQueue] = React.useState<SmSongInfo[]>([]);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [showCreatePlaylist, setShowCreatePlaylist] = React.useState<boolean>(false);
+  const [playlistName, setPlaylistName] = React.useState<string>("");
+
+  const [playlist, setPlaylist] = React.useState<Playlist | null>(null);
+
   React.useEffect(() =>
   { 
     const processQueue = async () =>
@@ -44,17 +50,19 @@ function App()
       {
         let tracks = await search.searchSong(song, true);
 
-        setDisplayTracks((displayTracks) =>
+        setTrackSets((trackSets) =>
         {
-          let newDisplayTracks = [
-            ...displayTracks,
+          let newTrackSets = [
+            ...trackSets,
             {
               tracks: tracks,
-              songInfo: song
+              songInfo: song,
+              selectedTrack: 0,
             }
           ];
-          return newDisplayTracks;
+          return newTrackSets;
         });
+        setPlaylistName(song.packName);
       } catch (error)
       {
         console.log(`Error while loading song ${song.title}, `, error);
@@ -69,7 +77,7 @@ function App()
   
   const onSongLoad = async (song: SmSongInfo) => {
 
-    for (let trackSet of displayTracks)
+    for (let trackSet of trackSets)
     {
       if (trackSet.songInfo.equals(song)) // did we already load this song? then quit.
       {
@@ -83,6 +91,36 @@ function App()
     });
   };
 
+  const handleCreatePlaylist = async (playlistName: string, isPrivate: boolean) =>
+  { 
+    setIsLoading(true);
+    let selectedTracks: Track[] = [];
+    for (let trackSet of trackSets)
+    {
+      if (trackSet.tracks.length > 0)
+      {
+        selectedTracks.push(trackSet.tracks[trackSet.selectedTrack]);  
+      }
+    }
+    let playlist = await search.createPlaylist(playlistName, isPrivate, selectedTracks);
+
+    setPlaylist(playlist);
+    setIsLoading(false);
+    
+  };
+
+  const updateSelectedTrack = (trackSetIdx: number, trackIdx: number) =>
+  {
+    console.log(`updating trackSet ${trackSetIdx} selected track: ${trackIdx}`);
+
+    setTrackSets((trackSets) =>
+    { 
+      let updatedTrackSets = [...trackSets];
+      updatedTrackSets[trackSetIdx].selectedTrack = trackIdx;
+      return updatedTrackSets;
+    });
+  }
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
@@ -90,12 +128,25 @@ function App()
         <div className="App">
           <SmFileDropZone onSongLoad={onSongLoad} />
           
+          <div className="track-list-container">
+            <h3>Track List: </h3>
           <div className="track-list">
-              {displayTracks.map((t, i) => 
-              <TrackSelector key={i} tracks={t.tracks} songInfo={t.songInfo} />
+              {trackSets.map((t, i) => 
+                <TrackSelector key={i} idx={i} trackSet={t} updateSelectedTrack={ updateSelectedTrack} />
               )}
             </div>
-        </div>
+            <Button variant="contained" size="large" disabled={trackSets.length == 0} onClick={() => { setShowCreatePlaylist(true); }}>Make Playlist!</Button>
+          </div>
+
+          <CreatePlaylistPopup open={showCreatePlaylist}
+            playlistName={playlistName}
+            isPrivate={true}
+            onCancel={() => { setShowCreatePlaylist(false); }}
+            onCreate={handleCreatePlaylist}
+            playlist={playlist}
+            loading={isLoading}
+          />
+          </div>
       </Container>
     </ThemeProvider>
   );

@@ -1,30 +1,43 @@
 import React from 'react';
-import { Track } from '../search/SpotifySearch';
+import { Track, TrackSet } from '../types/Track';
 import Carousel from 'react-material-ui-carousel'
 import { TrackDisplayItem } from './TrackDisplayItem';
 import { SmSongInfo } from '../types/SmFile';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { Paper } from '@mui/material';
 
+export interface TrackSelectorProps
+{
+    trackSet: TrackSet;
+    idx: number;
+    updateSelectedTrack: (trackSetIdx: number, trackIdx: number) => void;
+}
 
-export const TrackSelector: React.FC<{ tracks: Track[], songInfo: SmSongInfo }> = ({ tracks, songInfo }) =>
+export const TrackSelector: React.FC<TrackSelectorProps> = ({ trackSet, idx, updateSelectedTrack }) =>
 { 
     
     return (
         <Paper>
                 <div className="track-selector">
-                <p>Results for {songInfo.title}:</p>
+                <p>Results for {trackSet.songInfo.title}:</p>
                 {
-                    tracks.length === 0 && (
-                        <TrackDisplayItem track={undefined} songInfo={songInfo} />
+                    trackSet.tracks.length === 0 && (
+                        <TrackDisplayItem track={undefined} songInfo={trackSet.songInfo} />
                     )
                 }
-                {tracks.length > 0 && (
+                {trackSet.tracks.length > 0 && (
                     <Carousel
                         navButtonsAlwaysVisible={true}
                         autoPlay={false}
+                        onChange={(now, previous) =>
+                        {
+                            if (now)
+                            {
+                                updateSelectedTrack(idx, now);
+                            }
+                         }}
                     >
-                        {tracks.map((t, i) => <TrackDisplayItem key={i} track={t} songInfo={songInfo} />)}
+                        {trackSet.tracks.map((t, i) => <TrackDisplayItem key={i} track={t} songInfo={trackSet.songInfo} />)}
                     </Carousel>
                 )}
                 <div className="close-button">

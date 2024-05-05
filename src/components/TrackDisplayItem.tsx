@@ -1,5 +1,5 @@
 import React from "react";
-import { Track } from "../search/SpotifySearch";
+import { Track } from "../types/Track";
 import { Paper } from "@mui/material";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayCircleIcon from "@mui/icons-material/PlayCircle";

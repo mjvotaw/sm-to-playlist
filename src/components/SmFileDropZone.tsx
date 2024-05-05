@@ -1,5 +1,5 @@
 import React, {useCallback} from 'react'
-import Dropzone, {FileRejection, DropEvent, Accept} from 'react-dropzone'
+import Dropzone, {useDropzone, FileRejection, DropEvent, Accept} from 'react-dropzone'
 import { Paper, CircularProgress } from "@mui/material";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { SmSongInfo } from '../types/SmFile';
@@ -11,6 +11,14 @@ export interface FileDropZoneProps
 
 export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
 {
+    const {
+        getRootProps,
+        getInputProps,
+        isFocused,
+        isDragAccept,
+        isDragReject
+    } = useDropzone({ accept: { "text/plain": [".sm", ".ssc"] } });
+    
     const [loading, setIsLoading] = React.useState<boolean>(false);
     const onDrop = async (
         acceptedFiles: File[],
@@ -21,6 +29,7 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
 
         for (let file of acceptedFiles)
         { 
+            
             let song = await readFileContents(file);
             if (song)
             {
@@ -51,7 +60,9 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
                 const smLines = (smContents as string).split(/\r?\n/);
 
                 let song: SmSongInfo = new SmSongInfo();
-
+                song.filepath = file.webkitRelativePath;
+                song.packName = file.webkitRelativePath.split("/")[0] || "";
+                
                 for (let line of smLines)
                 {
                     if (line.startsWith("#ARTISTTRANSLIT:"))
@@ -103,18 +114,20 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
     };
 
     return (
-        <Dropzone accept={{"text/plain": [".sm", ".ssc"]}}  onDrop={onDrop}>
-            {({ getRootProps, getInputProps }) => (
-                <Paper variant="outlined">
-                    <div {...getRootProps()}>
-                        <input {...getInputProps()} />
-                        <p>Drag 'n' drop some files here, or click to select files</p>
-                        <CloudUploadIcon sx={{ fontSize: 60 }} />
-                        {loading && (
-                            <CircularProgress />)}
-                    </div>
-                </Paper>
-            )}
-        </Dropzone>
+        <div className="drop-zone-container">
+            <Dropzone accept={{"text/plain": [".sm", ".ssc"]}}  onDrop={onDrop}>
+                {({ getRootProps, getInputProps }) => (
+                    <Paper variant="outlined">
+                        <div className="drop-zone-content" {...getRootProps()}>
+                            <input {...getInputProps()} />
+                            <p>Drag a simfile pack folder onto here!</p>
+                            <CloudUploadIcon sx={{ fontSize: 60 }} />
+                            {loading && (
+                                <CircularProgress />)}
+                        </div>
+                    </Paper>
+                )}
+            </Dropzone>
+        </div>
     )
 };
