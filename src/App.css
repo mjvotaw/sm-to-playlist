@@ -15,6 +15,15 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.track-selector
+{
+  position: relative;
+  margin: 10px;
 }
 
 .track-item
@@ -60,14 +69,13 @@
   flex-grow: 1;
 }
 
-.track-title-wrapper
+.scrolling-text-wrapper
 {
   position: relative;
   overflow: hidden;
-  width: 230px;
-  height: 24px;
+  min-height: 2rem;
 }
-.track-title
+.scrolling-text
 {
   position: absolute;
   white-space: nowrap;
@@ -78,9 +86,8 @@
   opacity: 1;
 }
 
-.track-title:hover
+.scrolling-text:hover
 {
-    animation-name:title-scroll;
     animation-duration:6s;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
@@ -118,4 +125,12 @@
     opacity: 1;
     transform: translateX(0px);
   }
+}
+
+.close-button
+{
+  position: absolute;
+  cursor: pointer;
+  top: -5px;
+  right: 0px;
 }
