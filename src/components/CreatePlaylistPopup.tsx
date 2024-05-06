@@ -18,7 +18,7 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
 { 
     const [playlistName, setPlaylistName] = React.useState<string>(initialPlaylistName);
     const [isPrivate, setIsPrivate] = React.useState<boolean>(initialIsPrivate);
-    
+    const playlistTextRef = React.useRef<HTMLInputElement | null>(null);
     React.useEffect(() =>
     { 
         setPlaylistName(initialPlaylistName);
@@ -30,6 +30,12 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
             onCreate(playlistName, isPrivate);    
         }
     }
+
+    const handleCopy = () =>
+    { 
+        playlistTextRef.current?.select();
+        document.execCommand('copy');
+    };
     return (
         <Dialog
             open={open}
@@ -42,8 +48,8 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
                     component="form"
                     sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: 400 }}
                     >
-                        <InputBase value={playlist.external_urls.spotify} />
-                        <IconButton>
+                        <InputBase style={{flexGrow: 1}} value={playlist.external_urls.spotify} inputRef={playlistTextRef} />
+                        <IconButton style={{marginLeft: "auto"}} onClick={handleCopy} title="Copy URL">
                             <ContentCopyIcon />
                         </IconButton>
                     </Paper>
@@ -63,11 +69,18 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
                         <FormControlLabel checked={isPrivate} control={<Checkbox value={isPrivate} onChange={() => { setIsPrivate(!isPrivate);  }} />}  label="Make Playlist Private"/>
                     </FormGroup>
                 </DialogContent>
-                )}
+            )}
+            {playlist && (
+                <DialogActions>
+                <Button onClick={onCancel}>Close</Button>
+            </DialogActions>
+            )}
+            {!playlist && (
             <DialogActions>
                 <Button onClick={onCancel}>Cancel</Button>
                 <Button onClick={handleOnCreate} disabled={playlistName.length == 0} >Create!</Button>
             </DialogActions>
+            )}
         </Dialog>
     );
 };

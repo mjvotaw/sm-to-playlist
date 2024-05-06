@@ -109,6 +109,13 @@ function App()
     
   };
 
+  const handleRemoveTrackSet = (trackSetIdx: number) =>
+  { 
+    let updatedTrackSets = [...trackSets];
+    updatedTrackSets.splice(trackSetIdx, 1);
+    setTrackSets(updatedTrackSets);
+  };
+
   const updateSelectedTrack = (trackSetIdx: number, trackIdx: number) =>
   {
     console.log(`updating trackSet ${trackSetIdx} selected track: ${trackIdx}`);
@@ -132,7 +139,7 @@ function App()
             <h3>Track List: </h3>
           <div className="track-list">
               {trackSets.map((t, i) => 
-                <TrackSelector key={i} idx={i} trackSet={t} updateSelectedTrack={ updateSelectedTrack} />
+                <TrackSelector key={i} idx={i} trackSet={t} updateSelectedTrack={ updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
               )}
             </div>
             <Button variant="contained" size="large" disabled={trackSets.length == 0} onClick={() => { setShowCreatePlaylist(true); }}>Make Playlist!</Button>

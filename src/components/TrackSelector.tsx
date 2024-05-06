@@ -11,9 +11,10 @@ export interface TrackSelectorProps
     trackSet: TrackSet;
     idx: number;
     updateSelectedTrack: (trackSetIdx: number, trackIdx: number) => void;
+    removeTrackSet: (trackSetIdx: number) => void;
 }
 
-export const TrackSelector: React.FC<TrackSelectorProps> = ({ trackSet, idx, updateSelectedTrack }) =>
+export const TrackSelector: React.FC<TrackSelectorProps> = ({ trackSet, idx, updateSelectedTrack, removeTrackSet }) =>
 { 
     
     return (
@@ -29,6 +30,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ trackSet, idx, upd
                     <Carousel
                         navButtonsAlwaysVisible={true}
                         autoPlay={false}
+                        index={trackSet.selectedTrack}
                         onChange={(now, previous) =>
                         {
                             if (now)
@@ -40,7 +42,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({ trackSet, idx, upd
                         {trackSet.tracks.map((t, i) => <TrackDisplayItem key={i} track={t} songInfo={trackSet.songInfo} />)}
                     </Carousel>
                 )}
-                <div className="close-button">
+                <div className="close-button" onClick={() => { removeTrackSet(idx) }}>
                 <CancelIcon />
                 </div>
         </div>
