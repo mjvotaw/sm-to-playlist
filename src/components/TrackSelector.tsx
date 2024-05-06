@@ -4,6 +4,7 @@ import { TrackDisplayItem } from "./TrackDisplayItem";
 import { SmSongInfo } from "../types/SmFile";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { Stack, Pagination, Paper } from "@mui/material";
+import { useAudioPlayer } from "./AudioPlayer";
 
 
 export interface TrackSelectorProps {
@@ -18,22 +19,30 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
   idx,
   updateSelectedTrack,
   removeTrackSet,
-}) => {
-  const onTrackLeft = () => {
-    if (trackSet.selectedTrack > 0) {
-      updateSelectedTrack(idx, trackSet.selectedTrack - 1);
-    } else {
-      updateSelectedTrack(idx, trackSet.tracks.length - 1);
+}) =>
+{
+  
+  const audioPlayer = useAudioPlayer();
+
+
+  const handleUpdateSelectedTrack = (page: number) =>
+  { 
+    if (audioPlayer.isPlaying && audioPlayer.currentUrl == trackSet.tracks[trackSet.selectedTrack].previewAudioUrl)
+    {
+      audioPlayer.stop();
     }
+    updateSelectedTrack(idx, page);
   };
 
-  const onTrackRight = () => {
-    if (trackSet.selectedTrack < trackSet.tracks.length - 1) {
-      updateSelectedTrack(idx, trackSet.selectedTrack + 1);
-    } else {
-      updateSelectedTrack(idx, 0);
+  const handleRemoveTrackSet = () =>
+  { 
+    if (audioPlayer.isPlaying && audioPlayer.currentUrl == trackSet.tracks[trackSet.selectedTrack].previewAudioUrl)
+      {
+        audioPlayer.stop();
     }
-  };
+    removeTrackSet(idx);
+  }
+  
 
   return (
     <Paper>
@@ -52,12 +61,12 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
           )}
 
 
-          <Pagination count={trackSet.tracks.length} page={trackSet.selectedTrack + 1} onChange={(event, page) => { updateSelectedTrack(idx, page - 1); }} />
+          <Pagination count={trackSet.tracks.length} page={trackSet.selectedTrack + 1} onChange={(event, page) => { handleUpdateSelectedTrack(page - 1); }} />
 
           <div
           className="close-button"
           onClick={() => {
-            removeTrackSet(idx);
+            handleRemoveTrackSet();
           }}
         >
           <CancelIcon />

@@ -11,6 +11,7 @@ import { TrackSelector } from "./components/TrackSelector";
 import { CreatePlaylistPopup } from "./components/CreatePlaylistPopup";
 import { Playlist } from "@spotify/web-api-ts-sdk";
 import { Track, TrackSet } from './types/Track';
+import { AudioPlayerProvider } from "./components/AudioPlayer";
 
 const darkTheme = createTheme({
   palette: {
@@ -21,7 +22,7 @@ const darkTheme = createTheme({
 function App()
 {
   const search = useSpotifySearch();
-
+  
   const [trackSets, setTrackSets] = React.useState<TrackSet[]>([]);
   const [songQueue, setSongQueue] = React.useState<SmSongInfo[]>([]);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
@@ -135,6 +136,7 @@ function App()
 
   return (
     <ThemeProvider theme={darkTheme}>
+      <AudioPlayerProvider>
       <CssBaseline />
       <Container maxWidth={false}>
         <div className="App">
@@ -151,7 +153,7 @@ function App()
           }
           
           <div className="track-list-container">
-            <h3>Track List: </h3>
+            <h3>Track List ({trackSets.length} Songs):</h3>
           <div className="track-list">
               {trackSets.map((t, i) => 
                 <TrackSelector key={i} idx={i} trackSet={t} updateSelectedTrack={ updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
@@ -169,7 +171,8 @@ function App()
             loading={isLoading}
           />
           </div>
-      </Container>
+        </Container>
+        </AudioPlayerProvider>
     </ThemeProvider>
   );
 }
