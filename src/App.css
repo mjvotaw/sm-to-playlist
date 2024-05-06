@@ -51,12 +51,37 @@
 {
   position: relative;
   margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.track-item-container
+{
+  position: relative;
+}
+
+.track-button-left
+{
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  margin-top: -20px;
+}
+
+.track-button-right
+{
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  margin-top: -20px;
 }
 
 .track-item
 {
-  padding: 0px 60px;
+  padding: 0px 10px;
   height: 114px;
+  width: 100%;
 }
 
 .track-item.loading {

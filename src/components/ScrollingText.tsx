@@ -8,8 +8,8 @@ export const ScrollingText: React.FC<{ text: string }> = ({ text }) =>
   const styleRef = React.useRef<HTMLStyleElement | null>(null);
   const wrapperRef = React.useRef<HTMLDivElement | null>(null);
   const [lastWrapperWidth, setLastWrapperWidth] = React.useState<number>(0);
+  const [rand, setRand] = React.useState<number>(Math.round(Math.random() * 1000));
 
-  const rand = Math.round(Math.random() * 1000);
 
   React.useEffect(() =>
   { 
@@ -25,6 +25,10 @@ export const ScrollingText: React.FC<{ text: string }> = ({ text }) =>
       animation-name: title-scroll-${rand};
     }`
     setLastWrapperWidth(wrapperWidth);
+    while (styleRef.current?.sheet?.cssRules.length ?? 0 > 0)
+    {
+      styleRef.current?.sheet?.deleteRule(0);
+    }
     styleRef.current?.sheet?.insertRule(animation, 0);
     styleRef.current?.sheet?.insertRule(scrollRule, 1);
 

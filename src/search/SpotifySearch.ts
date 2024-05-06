@@ -24,13 +24,13 @@ export class SpotifySearch
         "playlist-modify-public",]);
     }
     
-    async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 0.5): Promise<Track[]>
+    async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 0.5, maxCount: number = 10): Promise<Track[]>
     {
         if (song.title === null || song.artist === null)
         {
             return [];    
         }
-        let tracks: Track[] = await this.search(song.title, song.subtitle ?? "", song.artist, scoreCutoff);
+        let tracks: Track[] = await this.search(song.title, song.subtitle ?? "", song.artist);
 
         if (includeTranslit && (song.titleTranslit != null || song.artistTranslit != null))
         {
@@ -38,12 +38,28 @@ export class SpotifySearch
             let subtitle = song.subtitleTranslit ?? song.subtitle ?? "";
             let artist = song.artistTranslit ?? song.artist;
 
-            let tracksTranslist = await this.search(title, subtitle, artist, scoreCutoff);
+            let tracksTranslist = await this.search(title, subtitle, artist,);
             tracks = [
                 ...tracks,
                 ...tracksTranslist
             ];
         }
+
+        tracks = tracks.sort((a, b) =>
+        { 
+            return b.similarityScore - a.similarityScore
+        });
+
+        let filteredTracks = tracks.filter((t) => t.similarityScore > scoreCutoff);
+        if (filteredTracks.length === 0)
+        {
+            tracks = tracks.slice(0, 5);
+        }
+        else
+        {
+            tracks = filteredTracks.slice(0, maxCount);    
+        }
+
         return tracks;
     }
 
@@ -63,7 +79,7 @@ export class SpotifySearch
         return playlist;   
     }
 
-    private async search(title: string, subtitle: string, artist: string, scoreCutoff: number): Promise<Track[]>
+    private async search(title: string, subtitle: string, artist: string): Promise<Track[]>
     {
         let results = await this.api.search(`${title} ${subtitle}, ${artist}`, ["track"]);
         let spottracks = results.tracks.items;
@@ -84,20 +100,6 @@ export class SpotifySearch
             };
             return t;
         });
-
-        tracks = tracks.sort((a, b) =>
-        { 
-            return b.similarityScore - a.similarityScore
-        });
-        let filteredTracks = tracks.filter((t) => t.similarityScore > scoreCutoff);
-        if (filteredTracks.length === 0)
-        {
-            tracks = tracks.slice(0, 5);
-        }
-        else
-        {
-            tracks = filteredTracks;    
-        }
 
         return tracks;
     }
