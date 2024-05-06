@@ -3,8 +3,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import "./App.css";
-import { Container, CircularProgress, Button } from "@mui/material";
-import { SpotifySearch } from "./search/SpotifySearch";
+import { Container, CircularProgress, Button, Grid } from "@mui/material";
+import { useSpotifySearch } from "./search/SpotifySearch";
 import { SmFileDropZone } from "./components/SmFileDropZone";
 import { SmSongInfo } from "./types/SmFile";
 import { TrackSelector } from "./components/TrackSelector";
@@ -20,7 +20,8 @@ const darkTheme = createTheme({
 
 function App()
 {
-  const search = new SpotifySearch();
+  const search = useSpotifySearch();
+
   const [trackSets, setTrackSets] = React.useState<TrackSet[]>([]);
   const [songQueue, setSongQueue] = React.useState<SmSongInfo[]>([]);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
@@ -29,6 +30,7 @@ function App()
   const [playlistName, setPlaylistName] = React.useState<string>("");
 
   const [playlist, setPlaylist] = React.useState<Playlist | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(search.isAuthenticated());
 
   React.useEffect(() =>
   { 
@@ -75,6 +77,11 @@ function App()
     processQueue();
   }, [songQueue, isProcessing]);
   
+  const handleAuth = async() => {
+    await search.authenticate();
+    setIsAuthenticated(search.isAuthenticated());
+  }
+
   const onSongLoad = async (song: SmSongInfo) => {
 
     for (let trackSet of trackSets)
@@ -118,8 +125,6 @@ function App()
 
   const updateSelectedTrack = (trackSetIdx: number, trackIdx: number) =>
   {
-    console.log(`updating trackSet ${trackSetIdx} selected track: ${trackIdx}`);
-
     setTrackSets((trackSets) =>
     { 
       let updatedTrackSets = [...trackSets];
@@ -133,7 +138,17 @@ function App()
       <CssBaseline />
       <Container maxWidth={false}>
         <div className="App">
-          <SmFileDropZone onSongLoad={onSongLoad} />
+          {
+            isAuthenticated ? 
+              <SmFileDropZone onSongLoad={onSongLoad} />
+              :
+              <Grid container display="flex" justifyContent="center" alignItems="center">
+                <Grid display="flex" justifyContent="center" alignItems="center" flexDirection="column" >
+                  <h3>This app needs to access your Spotify account in order to search for content and create playlists.</h3>
+                  <Button variant="contained" onClick={() => { handleAuth(); }}>Yes, you can connect to my Spotify account</Button>
+                </Grid>
+              </Grid>
+          }
           
           <div className="track-list-container">
             <h3>Track List: </h3>

@@ -1,7 +1,8 @@
-import { Playlist, SpotifyApi, Track as SpotifyTrack, TrackItem } from '@spotify/web-api-ts-sdk';
+import { AuthorizationCodeWithPKCEStrategy, Playlist, SpotifyApi, Track as SpotifyTrack, TrackItem } from '@spotify/web-api-ts-sdk';
 import gestaltSimilarity from "gestalt-pattern-matcher";
 import { SmSongInfo } from '../types/SmFile';
 import { Track } from '../types/Track';
+import React from 'react';
 
 const client_id = "4872953cacaa437d9e7f5393df0ef2dd";
 const redirect_url = 'http://localhost:3000';
@@ -14,14 +15,33 @@ export class SpotifySearch
 
     private WHOLE_SCORE_WEIGHT = 0.2;
     private TITLE_WEIGHT = 1.0;
-    private ARTIST_WEIGHT = 0.5;
-
+    private ARTIST_WEIGHT = 1.0;
+     _isAuthenticated: boolean = false;
     constructor()
     {
-        this.api = SpotifyApi.withUserAuthorization(client_id, redirect_url, ["playlist-read-private",
-        "playlist-read-collaborative",
-        "playlist-modify-private",
-        "playlist-modify-public",]);
+        const auth = new AuthorizationCodeWithPKCEStrategy(client_id, redirect_url, ["playlist-read-private",
+            "playlist-read-collaborative",
+            "playlist-modify-private",
+            "playlist-modify-public",]);
+        
+        this.api = new SpotifyApi(auth);
+    }
+
+    async authenticate()
+    {
+        try
+        {
+            await this.api.authenticate();
+            this._isAuthenticated = true;
+        } catch (error)
+        {
+            console.log("Error while trying to authenticate:", error);
+        }
+    }
+
+    isAuthenticated(): boolean
+    {
+        return this._isAuthenticated;
     }
     
     async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 0.5, maxCount: number = 10): Promise<Track[]>
@@ -113,10 +133,10 @@ export class SpotifySearch
 
     private score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): number
     {
-        // let wholeScore = gestaltSimilarity(`${item_title} ${item_artist}`, `${searched_title} ${searched_subtitle} ${searched_artist}`);
+        let wholeScore = gestaltSimilarity(`${item_title} ${item_artist}`, `${searched_title} ${searched_subtitle} ${searched_artist}`);
         let trackScore = gestaltSimilarity(item_title, searched_title);
         let artistScore = gestaltSimilarity(item_artist, searched_artist);
-        return (trackScore * this.TITLE_WEIGHT) + (artistScore * this.ARTIST_WEIGHT);
+        return (wholeScore * this.WHOLE_SCORE_WEIGHT) + (trackScore * this.TITLE_WEIGHT) + (artistScore * this.ARTIST_WEIGHT);
     }
 
     chunkTracks(tracks:Track[], size: number): Track[][] {
@@ -126,4 +146,10 @@ export class SpotifySearch
         }
         return chunks;
     }
+}
+
+export function useSpotifySearch()
+{
+    const [api, setApi] = React.useState<SpotifySearch>(new SpotifySearch());
+    return api;
 }

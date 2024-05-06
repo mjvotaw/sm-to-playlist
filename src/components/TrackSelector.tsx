@@ -38,7 +38,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
   return (
     <Paper>
       <div className="track-selector">
-        <p>Results for {trackSet.songInfo.title}:</p>
+        <p>Results for "{trackSet.songInfo.title} {trackSet.songInfo.subtitle}", by {trackSet.songInfo.artist}:</p>
 
         
           {trackSet.tracks.length === 0 && (
