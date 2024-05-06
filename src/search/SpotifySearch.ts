@@ -4,8 +4,8 @@ import { SmSongInfo } from '../types/SmFile';
 import { Track } from '../types/Track';
 import React from 'react';
 
-const client_id = "4872953cacaa437d9e7f5393df0ef2dd";
-const redirect_url = 'http://localhost:3000';
+const client_id:string = process.env.REACT_APP_SPOTIFY_CLIENT_ID ?? "";
+const redirect_url:string = process.env.REACT_APP_SPOTIFY_REDIRECT ?? "";
 
 
 export class SpotifySearch
