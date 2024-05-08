@@ -5,6 +5,9 @@
   display: flex;
 }
 
+
+/* Drop Zone */
+
 .drop-zone-container
 {
   align-self: center;
@@ -22,6 +25,9 @@
   justify-content: center;
   align-items: center;
 }
+
+
+/* Track list */
 
 .track-list-container
 {
@@ -108,7 +114,6 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  border-radius: 4px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -120,6 +125,16 @@
   overflow: hidden;
   flex-grow: 1;
 }
+
+.close-button
+{
+  position: absolute;
+  cursor: pointer;
+  top: -5px;
+  right: 0px;
+}
+
+/* Scrolling Text Wrapper */
 
 .scrolling-text-wrapper
 {
@@ -147,12 +162,4 @@
 
 @keyframes scroll-back {
   to {transform: translateX(0);}
-}
-
-.close-button
-{
-  position: absolute;
-  cursor: pointer;
-  top: -5px;
-  right: 0px;
 }

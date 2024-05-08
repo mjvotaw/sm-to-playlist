@@ -16,6 +16,9 @@ export class SpotifySearch
     private WHOLE_SCORE_WEIGHT = 0.2;
     private TITLE_WEIGHT = 1.0;
     private ARTIST_WEIGHT = 1.0;
+
+    private searchCache: { [id: string]: Track[] } = {};
+
      _isAuthenticated: boolean = false;
     constructor()
     {
@@ -48,7 +51,7 @@ export class SpotifySearch
     {
         if (song.title === null || song.artist === null)
         {
-            return [];    
+            return [];
         }
         let tracks: Track[] = await this.search(song.title, song.subtitle ?? "", song.artist);
 
@@ -101,15 +104,24 @@ export class SpotifySearch
 
     private async search(title: string, subtitle: string, artist: string): Promise<Track[]>
     {
+        let maybeCachedResults = this.getCachedResults(title, subtitle, artist);
+        if (maybeCachedResults)
+        {
+            return maybeCachedResults;
+        }
         let results = await this.api.search(`${title} ${subtitle}, ${artist}`, ["track"]);
         let spottracks = results.tracks.items;
 
         let tracks = spottracks.map((track) =>
         {
             let imageUrl = track.album.images.length > 0 ? track.album.images[0].url : null;
+            let artists = track.artists.map(a => { return { name: a.name, link: a.external_urls.spotify }; });
+
             let t: Track = {
                 name: track.name,
+                link: track.external_urls.spotify,
                 artist: track.artists.map(a => a.name).join(", "),
+                artists: artists,
                 similarityScore: this.scoreTrack(track, title, subtitle, artist),
                 popularityStore: track.popularity,
                 previewAudioUrl: track.preview_url,
@@ -121,6 +133,7 @@ export class SpotifySearch
             return t;
         });
 
+        this.setCachedResults(title, subtitle, artist, tracks);
         return tracks;
     }
 
@@ -139,12 +152,24 @@ export class SpotifySearch
         return (wholeScore * this.WHOLE_SCORE_WEIGHT) + (trackScore * this.TITLE_WEIGHT) + (artistScore * this.ARTIST_WEIGHT);
     }
 
-    chunkTracks(tracks:Track[], size: number): Track[][] {
+    private chunkTracks(tracks:Track[], size: number): Track[][] {
         const chunks: Track[][] = [];
         while (tracks.length > 0) {
             chunks.push(tracks.splice(0, size));
         }
         return chunks;
+    }
+
+    private getCachedResults(title: string, subtitle: string, artist: string): Track[] | undefined
+    {
+        let cacheKey = `${title}|${subtitle}|${artist}`;
+        return this.searchCache[cacheKey];
+    }
+
+    private setCachedResults(title: string, subtitle: string, artist: string, tracks: Track[])
+    {
+        let cacheKey = `${title}|${subtitle}|${artist}`;
+        this.searchCache[cacheKey] = tracks;
     }
 }
 

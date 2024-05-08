@@ -19,17 +19,13 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
         isDragReject
     } = useDropzone({ accept: { "text/plain": [".sm", ".ssc"] } });
     
-    const [loading, setIsLoading] = React.useState<boolean>(false);
     const onDrop = async (
         acceptedFiles: File[],
         fileRejections: FileRejection[],
         event: DropEvent
     ) => {
-        setIsLoading(true);
-
         for (let file of acceptedFiles)
         { 
-            
             let song = await readFileContents(file);
             if (song)
             {
@@ -37,8 +33,6 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
             }
 
         }
-
-        setIsLoading(false);
     };
 
     const readFileContents = async (file: File): Promise<SmSongInfo> =>
@@ -51,7 +45,7 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
             reader.onerror = () => { reject('file reading has failed'); }
 
             reader.onload = () => {
-            // Do whatever you want with the file contents
+            
                 const smContents = reader.result;
                 if (smContents == null || typeof smContents != 'string')
                 {
@@ -94,6 +88,14 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
                         break;    
                     }
                 }
+                if (song.titleTranslit != null && (song.title == null || song.title == ""))
+                {
+                    song.title = song.titleTranslit;
+                }
+                if (song.artistTranslit != null && (song.artist == null || song.artist == ""))
+                {
+                    song.artist = song.artistTranslit;    
+                }
 
                 resolve(song);
             }
@@ -114,20 +116,14 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
     };
 
     return (
-        <div className="drop-zone-container">
-            <Dropzone accept={{"text/plain": [".sm", ".ssc"]}}  onDrop={onDrop}>
-                {({ getRootProps, getInputProps }) => (
-                    <Paper variant="outlined">
-                        <div className="drop-zone-content" {...getRootProps()}>
-                            <input {...getInputProps()} />
-                            <p>Drag a simfile pack folder onto here!</p>
-                            <CloudUploadIcon sx={{ fontSize: 60 }} />
-                            {loading && (
-                                <CircularProgress />)}
-                        </div>
-                    </Paper>
-                )}
-            </Dropzone>
-        </div>
+        <Dropzone accept={{"text/plain": [".sm", ".ssc"]}}  onDrop={onDrop}>
+            {({ getRootProps, getInputProps }) => (
+                    <div className="drop-zone-content" {...getRootProps()}>
+                        <input {...getInputProps()} />
+                        <p>Drag a simfile pack folder onto here!</p>
+                        <CloudUploadIcon sx={{ fontSize: 60 }} />
+                    </div>
+            )}
+        </Dropzone>
     )
 };

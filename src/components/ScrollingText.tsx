@@ -3,7 +3,7 @@ import React from "react";
 // This is trying to mimic the marquee style scrolling that Spotify uses on long titles.
 // This could be done just as css rules, if the bounding box was a static width.
 
-export const ScrollingText: React.FC<{ text: string }> = ({ text }) =>
+export const ScrollingText: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 {
   const styleRef = React.useRef<HTMLStyleElement | null>(null);
   const wrapperRef = React.useRef<HTMLDivElement | null>(null);
@@ -98,7 +98,7 @@ export const ScrollingText: React.FC<{ text: string }> = ({ text }) =>
     <div>
       <style ref={styleRef}></style>
       <div className="scrolling-text-wrapper" ref={wrapperRef}>
-        <div className={`scrolling-text scrolling-text-${rand}`} onMouseEnter={mouseEnter} onMouseLeave={mouseLeave}>{text}</div>
+        <div className={`scrolling-text scrolling-text-${rand}`} onMouseEnter={mouseEnter} onMouseLeave={mouseLeave}>{children}</div>
       </div>
     </div>
   );

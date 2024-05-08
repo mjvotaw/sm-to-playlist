@@ -1,6 +1,6 @@
 import React from "react";
 import { Track } from "../types/Track";
-import { Box, CircularProgress, Paper } from "@mui/material";
+import { Box, CircularProgress, Paper, Link, IconButton } from "@mui/material";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayCircleIcon from "@mui/icons-material/PlayCircle";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
@@ -36,8 +36,19 @@ export const TrackDisplayItem: React.FC<{
               {!track.imageUrl && <MusicNoteIcon sx={{ fontSize: 60 }} />}
             </div>
             <div className="track-info">
-              <ScrollingText text={track.name} />
-              <ScrollingText text={track.artist} />
+              <ScrollingText>
+                <Link href={track.link} target="_blank">{track.name}</Link>
+              </ScrollingText>
+              <ScrollingText>
+                <Box display="flex" gap="6px">
+                  {track.artists.map((artist, idx) =>
+                  { 
+                    return (
+                      <Link href={artist.link ?? ""} target="_blank" key={idx}>{artist.name}</Link>
+                    )
+                  })}
+                </Box>
+              </ScrollingText>
             </div>
             <Box sx={{ position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", }}>
@@ -60,10 +71,14 @@ export const TrackDisplayItem: React.FC<{
                 }}
               >
                 {audioPlayer.currentUrl == track.previewAudioUrl &&
-                audioPlayer.isPlaying ? (
-                  <PauseCircleIcon fontSize="large" onClick={handleStop} />
+                  audioPlayer.isPlaying ? (
+                    <IconButton onClick={handleStop}>
+                      <PauseCircleIcon fontSize="large"  />
+                      </IconButton>
                 ) : (
-                  <PlayCircleIcon fontSize="large" onClick={handlePlay} />
+                    <IconButton onClick={handlePlay}>
+                      <PlayCircleIcon fontSize="large" />
+                    </IconButton>
                 )}
               </Box>
             </Box>
@@ -78,7 +93,9 @@ export const TrackDisplayItem: React.FC<{
               <p className="track-title-wrapper">
                 <span className="track-title">No songs found for</span>
               </p>
-              <ScrollingText text={songInfo.title ?? ""} />
+              <ScrollingText>
+                <span>{songInfo.title ?? ""}</span>
+                </ScrollingText>
             </div>
           </div>
         )}
