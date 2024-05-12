@@ -11,6 +11,8 @@ export interface Track
         link: string | null;
     }[];
     similarityScore: number;
+    artistSimilarityScore: number;
+    titleSimilarityScore: number;
     previewAudioUrl: string | null;
     popularityStore: number;
     duration: number;

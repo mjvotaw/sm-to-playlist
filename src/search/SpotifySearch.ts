@@ -7,17 +7,22 @@ import React from 'react';
 const client_id:string = process.env.REACT_APP_SPOTIFY_CLIENT_ID ?? "";
 const redirect_url:string = process.env.REACT_APP_SPOTIFY_REDIRECT ?? "";
 
-
 export class SpotifySearch
 {
 
     api: SpotifyApi;
 
     private WHOLE_SCORE_WEIGHT = 0.2;
-    private TITLE_WEIGHT = 1.0;
+    private FULL_TITLE_WEIGHT = 1.0;
+    private JUST_TITLE_WEIGHT = 0.2;
     private ARTIST_WEIGHT = 1.0;
 
     private searchCache: { [id: string]: Track[] } = {};
+
+    private common_sm_words = [
+        "(No CMOD)",
+        /^\[\d+\]/,
+    ];
 
      _isAuthenticated: boolean = false;
     constructor()
@@ -28,6 +33,7 @@ export class SpotifySearch
             "playlist-modify-public",]);
         
         this.api = new SpotifyApi(auth);
+        (window as any)["gestaltSimilarity"] = gestaltSimilarity;
     }
 
     async authenticate()
@@ -39,15 +45,18 @@ export class SpotifySearch
         } catch (error)
         {
             console.log("Error while trying to authenticate:", error);
+            throw error;
         }
     }
 
-    isAuthenticated(): boolean
+    async isAuthenticated(): Promise<boolean>
     {
-        return this._isAuthenticated;
+        return (await this.api.getAccessToken()) != null;
     }
+
     
-    async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 0.5, maxCount: number = 10): Promise<Track[]>
+    
+    async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 1.3, maxCount: number = 10): Promise<Track[]>
     {
         if (song.title === null || song.artist === null)
         {
@@ -74,16 +83,7 @@ export class SpotifySearch
         });
 
         let filteredTracks = tracks.filter((t) => t.similarityScore > scoreCutoff);
-        if (filteredTracks.length === 0)
-        {
-            tracks = tracks.slice(0, 5);
-        }
-        else
-        {
-            tracks = filteredTracks.slice(0, maxCount);    
-        }
-
-        return tracks;
+        return filteredTracks;
     }
 
     async createPlaylist(playlistName: string, isPrivate: boolean, tracks: Track[]): Promise<Playlist<TrackItem>>
@@ -104,6 +104,12 @@ export class SpotifySearch
 
     private async search(title: string, subtitle: string, artist: string): Promise<Track[]>
     {
+        // Strip out some things that are only useful in Stepmania,
+        // and reorganize the artist info so that the artists are listed alphabetically
+        title = this.stripCommonSMWords(title);
+        subtitle = this.stripCommonSMWords(subtitle);
+        artist = this.splitArtist(artist).join(" ");
+
         let maybeCachedResults = this.getCachedResults(title, subtitle, artist);
         if (maybeCachedResults)
         {
@@ -116,13 +122,16 @@ export class SpotifySearch
         {
             let imageUrl = track.album.images.length > 0 ? track.album.images[0].url : null;
             let artists = track.artists.map(a => { return { name: a.name, link: a.external_urls.spotify }; });
+            let [titleScore, artistScore] = this.scoreTrack(track, title, subtitle, artist);
 
             let t: Track = {
                 name: track.name,
                 link: track.external_urls.spotify,
                 artist: track.artists.map(a => a.name).join(", "),
                 artists: artists,
-                similarityScore: this.scoreTrack(track, title, subtitle, artist),
+                similarityScore: titleScore + artistScore,
+                artistSimilarityScore: artistScore,
+                titleSimilarityScore: titleScore,
                 popularityStore: track.popularity,
                 previewAudioUrl: track.preview_url,
                 duration: track.duration_ms,
@@ -137,19 +146,32 @@ export class SpotifySearch
         return tracks;
     }
 
-    private scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artist: string): number
+    private scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artist: string): [number, number]
     {
         let item_title = track.name;
-        let item_artist = track.artists.map(a => a.name).join(", ");
+        let item_artist = track.artists.map(a => a.name).join(" ");
         return this.score(item_title, item_artist, searched_title, searched_subtitle, searched_artist);
     }
 
-    private score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): number
+    // Determining a match score is slightly delicate
+    private score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): [number, number]
     {
-        let wholeScore = gestaltSimilarity(`${item_title} ${item_artist}`, `${searched_title} ${searched_subtitle} ${searched_artist}`);
-        let trackScore = gestaltSimilarity(item_title, searched_title);
-        let artistScore = gestaltSimilarity(item_artist, searched_artist);
-        return (wholeScore * this.WHOLE_SCORE_WEIGHT) + (trackScore * this.TITLE_WEIGHT) + (artistScore * this.ARTIST_WEIGHT);
+        item_title = item_title.toLowerCase();
+        item_artist = item_artist.toLowerCase();
+        searched_title = searched_title.toLowerCase();
+        searched_subtitle = searched_subtitle.toLowerCase();
+        searched_artist = searched_artist.toLowerCase();
+
+        let full_title = `${searched_title} ${searched_subtitle}`.trim();
+
+        let trackScore = gestaltSimilarity(item_title, full_title) * this.FULL_TITLE_WEIGHT;
+        let artistScore = gestaltSimilarity(item_artist, searched_artist) * this.ARTIST_WEIGHT;
+
+        if (searched_subtitle.length > 0)
+        {
+            trackScore += gestaltSimilarity(item_title, searched_title) * this.JUST_TITLE_WEIGHT;    
+        }
+        return [trackScore, artistScore];
     }
 
     private chunkTracks(tracks:Track[], size: number): Track[][] {
@@ -171,10 +193,47 @@ export class SpotifySearch
         let cacheKey = `${title}|${subtitle}|${artist}`;
         this.searchCache[cacheKey] = tracks;
     }
+
+    private stripCommonSMWords(str: string): string 
+    {
+        let stripped_str = str;
+
+        for (let word of this.common_sm_words)
+        {
+            stripped_str = stripped_str.replace(word, "");
+        }
+
+        return stripped_str.trim();
+    }
+    
+    private splitArtist(artist: string): string[]
+    {
+        // An "artist" tag might actually be several artists ("Srezcat [feat. blaxervant & Shinonome I/F]")
+        // in order to get meaningful genres, we need to split this up into multiple artist names
+        let originalArtist = artist;
+        let separators = [" & ", " + ", " feat. ", " feat ", " ft. ", "vs. ", " vs ", ", ", " + ", " x "];
+        let replacement_separator = "----";
+        artist = artist.replace("(", "").replace(")", "").replace("[", "").replace("]", "");
+        artist = artist.toLowerCase();
+
+        for (let sep in separators)
+        {
+            artist = artist.replaceAll(sep, replacement_separator);
+        }
+
+        let split_artists = artist.split(replacement_separator);
+        if (split_artists.length == 0)
+        {
+            return [originalArtist];
+        }
+        split_artists.sort((a, b) => a.localeCompare(b));
+        return split_artists;
+    }
 }
+
+const api = new SpotifySearch();
 
 export function useSpotifySearch()
 {
-    const [api, setApi] = React.useState<SpotifySearch>(new SpotifySearch());
     return api;
 }
