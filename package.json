@@ -21,6 +21,7 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.2.3",
     "react-scripts": "5.0.1",
+    "react-virtualized": "^9.22.5",
     "typescript": "^5.4.5",
     "web-vitals": "^2.1.4"
   },
@@ -54,6 +55,7 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
+    "@types/react-virtualized": "^9.21.30",
     "gh-pages": "^6.1.1"
   }
 }

@@ -3,7 +3,7 @@ import { Track, TrackSet } from "../types/Track";
 import { TrackDisplayItem } from "./TrackDisplayItem";
 import { SmSongInfo } from "../types/SmFile";
 import CancelIcon from "@mui/icons-material/Cancel";
-import { Stack, Pagination, Paper } from "@mui/material";
+import { Stack, Pagination, Paper, Box, Typography } from "@mui/material";
 import { useAudioPlayer } from "./AudioPlayer";
 
 
@@ -46,8 +46,11 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
 
   return (
     <Paper>
-      <div className="track-selector">
-        <p>Results for "{trackSet.songInfo.title} {trackSet.songInfo.subtitle}", by {trackSet.songInfo.artist}:</p>
+      <Box position="relative" display="flex" flexDirection="column" alignItems="center" padding={2}>
+
+        <Typography variant="body2" alignSelf="flex-start">
+          Results for "{trackSet.songInfo.title} {trackSet.songInfo.subtitle}"<br />by {trackSet.songInfo.artist}:
+        </Typography>
 
         
           {trackSet.tracks.length === 0 && (
@@ -71,7 +74,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
         >
           <CancelIcon />
         </div>
-      </div>
+        </Box>
     </Paper>
   );
 };

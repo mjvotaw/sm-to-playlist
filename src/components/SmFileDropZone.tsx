@@ -23,9 +23,18 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
         acceptedFiles: File[],
         fileRejections: FileRejection[],
         event: DropEvent
-    ) => {
-        for (let file of acceptedFiles)
+    ) =>
+    {
+        // Apparently the 'accept' prop for useDropzone doesn't work right, and it will return
+        // pretty much any text file, so weed out anything that's not a simfile.
+        let simfiles: File[] = acceptedFiles.filter((f) => f.name.endsWith(".sm") || f.name.endsWith(".ssc"));
+
+        for (let file of simfiles)
         { 
+            if (!file.name.endsWith(".sm") && !file.name.endsWith(".ssc"))
+            {
+                continue;
+            }
             let song = await readFileContents(file);
             if (song)
             {
@@ -95,6 +104,13 @@ export const SmFileDropZone: React.FC<FileDropZoneProps> = ({onSongLoad}) =>
                 if (song.artistTranslit != null && (song.artist == null || song.artist == ""))
                 {
                     song.artist = song.artistTranslit;    
+                }
+
+                if (song.title == null)
+                {
+                    console.log(`${file.name} has no song title??`);    
+                    reject(`${file.name} has no song title??`);
+                    return;
                 }
 
                 resolve(song);

@@ -3,7 +3,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import "./App.css";
-import { Container, CircularProgress, Button, Grid, Paper, Stack, Divider, FormControlLabel, Checkbox, Box, LinearProgress } from "@mui/material";
+import { Container, CircularProgress, Button, Grid, Paper, Stack, Divider, FormControlLabel, Checkbox, Box, LinearProgress, Backdrop } from "@mui/material";
 import { useSpotifySearch } from "./search/SpotifySearch";
 import { SmFileDropZone } from "./components/SmFileDropZone";
 import { SmSongInfo } from "./types/SmFile";
@@ -12,6 +12,7 @@ import { CreatePlaylistPopup } from "./components/CreatePlaylistPopup";
 import { Playlist } from "@spotify/web-api-ts-sdk";
 import { Track, TrackSet } from './types/Track';
 import { AudioPlayerProvider } from "./components/AudioPlayer";
+import { TrackList } from "./components/TrackList";
 
 const darkTheme = createTheme({
   palette: {
@@ -36,9 +37,47 @@ function App()
   const [includeTranslit, setIncludeTranslit] = React.useState<boolean>(true);
 
   const [playlist, setPlaylist] = React.useState<Playlist | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(search.isAuthenticated());
-
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
+  const [showInitialLoad, setShowInitialLoad] = React.useState<boolean>(true);
     
+
+  // On initial load, check if we are already authenticated, or if we
+  // need to deal with a redirect code.
+  React.useEffect(() =>
+  { 
+    const checkAuthentication = async () =>
+    {
+      let isSpotifyAuthenticated = await search.isAuthenticated();
+      if (isSpotifyAuthenticated)
+      {
+        console.log("isSpotifyAuthenticated = true");
+        setIsAuthenticated(true);
+      }
+      else
+      {
+        const hashParams = new URLSearchParams(window.location.search);
+        const code = hashParams.get("code");
+        if (code)
+        {
+          console.log("we have a code");
+          try
+          {
+            await search.authenticate();
+            setIsAuthenticated(true);
+          }
+          catch (err)
+          {
+            console.log(err);
+          }
+        }
+      }
+      setShowInitialLoad(false);
+    };
+
+    checkAuthentication();
+  }, []);
+
+
   React.useEffect(() =>
   { 
     if (isProcessingSong || isLoadingSongs || trackSets.length == 0)
@@ -83,6 +122,7 @@ function App()
               selectedTrack: 0,
             }
           ];
+          newTrackSets.sort((a, b) => a.songInfo.title!.localeCompare(b.songInfo.title!));
           return newTrackSets;
         });
         setPlaylistName(song.packName);
@@ -101,14 +141,13 @@ function App()
   
   const handleAuth = async() => {
     await search.authenticate();
-    setIsAuthenticated(search.isAuthenticated());
   }
 
   const updateLoadingProgress = () =>
   { 
     let progress = Math.round((trackSets.length / (trackSets.length + songQueue.length)) * 100);
     // Occassionally, trackSets.length and songQueue.length are both 0, 
-    // which is honestly kind of unexpected.
+    // which is honestly kind of unexpected. That probably means I'm not updating something correctly.
     if (!Number.isNaN(progress))
     {
       setLoadingProgress(progress);
@@ -171,6 +210,8 @@ function App()
   {
     setTrackSets((trackSets) =>
     { 
+      // This needs to be done differently, because I'm making a copy of a big-ass array here.
+      // I don't know how the heck React projects are supposed to do this stuff
       let updatedTrackSets = [...trackSets];
       updatedTrackSets[trackSetIdx].selectedTrack = trackIdx;
       return updatedTrackSets;
@@ -183,6 +224,9 @@ function App()
       <CssBaseline />
       <Container maxWidth={false}>
           <div className="App">
+            <Backdrop open={showInitialLoad} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1}}>
+              <CircularProgress  />
+            </Backdrop>
           <div className="drop-zone-container">
             <Paper variant="outlined">
               {
@@ -193,8 +237,11 @@ function App()
 
                         
                         <Box sx={{ width: '80%', paddingBottom: '20px' }}>
-                        {isLoadingSongs && (
-                            <LinearProgress variant="determinate" value={loadingProgress} />
+                          {isLoadingSongs && (
+                            <div>
+                            <LinearProgress variant="determinate" value={loadingProgress} /> 
+                              <span>{trackSets.length}  of {trackSets.length + songQueue.length}</span>
+                              </div>
                           )}
                           </Box>
                         </Box>
@@ -215,12 +262,8 @@ function App()
         </div>
           
           <div className="track-list-container">
-            <h3>Track List ({trackSets.length} Songs):</h3>
-          <div className="track-list">
-              {trackSets.map((t, i) => 
-                <TrackSelector key={i} idx={i} trackSet={t} updateSelectedTrack={ updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
-              )}
-            </div>
+              <h3>Track List ({trackSets.length} Songs):</h3>
+              <TrackList trackSets={trackSets} isLoadingSongs={isLoadingSongs} updateSelectedTrack={updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
             <Button variant="contained" size="large" disabled={trackSets.length == 0 || isLoadingSongs} onClick={() => { setShowCreatePlaylist(true); }}>Make Playlist!</Button>
           </div>
 

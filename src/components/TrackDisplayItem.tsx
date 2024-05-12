@@ -49,6 +49,7 @@ export const TrackDisplayItem: React.FC<{
                   })}
                 </Box>
               </ScrollingText>
+              {/* <div>{track.titleSimilarityScore.toFixed(4)} + {track.artistSimilarityScore.toFixed(4)} = {track.similarityScore.toFixed(4)}</div> */}
             </div>
             <Box sx={{ position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", }}>
