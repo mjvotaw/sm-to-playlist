@@ -1,18 +1,20 @@
 import React from "react";
+import "./App.css";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-
-import "./App.css";
-import { Container, CircularProgress, Button, Grid, Paper, Stack, Divider, FormControlLabel, Checkbox, Box, LinearProgress, Backdrop } from "@mui/material";
+import { Container, CircularProgress, Button, Grid, Paper, Stack, Divider, FormControlLabel, Checkbox, Box, LinearProgress, Backdrop, IconButton } from "@mui/material";
+import InfoIcon from '@mui/icons-material/Info';
+import GitHub  from "@mui/icons-material/GitHub";
+import { Playlist } from "@spotify/web-api-ts-sdk";
+import { SmSongInfo } from "./types/SmFile";
+import { Track, TrackSet } from './types/Track';
 import { useSpotifySearch } from "./search/SpotifySearch";
 import { SmFileDropZone } from "./components/SmFileDropZone";
-import { SmSongInfo } from "./types/SmFile";
-import { TrackSelector } from "./components/TrackSelector";
 import { CreatePlaylistPopup } from "./components/CreatePlaylistPopup";
-import { Playlist } from "@spotify/web-api-ts-sdk";
-import { Track, TrackSet } from './types/Track';
 import { AudioPlayerProvider } from "./components/AudioPlayer";
 import { TrackList } from "./components/TrackList";
+import { InfoDialog } from "./components/InfoDialog";
+
 
 const darkTheme = createTheme({
   palette: {
@@ -35,11 +37,13 @@ function App()
   const [playlistName, setPlaylistName] = React.useState<string>("");
 
   const [includeTranslit, setIncludeTranslit] = React.useState<boolean>(true);
+  const [includeCovers, setIncludeCovers] = React.useState<boolean>(true);
 
   const [playlist, setPlaylist] = React.useState<Playlist | null>(null);
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
   const [showInitialLoad, setShowInitialLoad] = React.useState<boolean>(true);
-    
+  
+  const [showInfo, setShowInfo] = React.useState<boolean>(false);
 
   // On initial load, check if we are already authenticated, or if we
   // need to deal with a redirect code.
@@ -90,7 +94,7 @@ function App()
     setTrackSets([]);
     setSongQueue(songInfos);
     
-  }, [includeTranslit]);
+  }, [includeTranslit, includeCovers]);
   
   React.useEffect(() =>
   { 
@@ -110,22 +114,40 @@ function App()
 
       try
       {
-        let tracks = await search.searchSong(song, includeTranslit);
 
-        setTrackSets((trackSets) =>
+        // Check to make sure this song isn't already loaded.
+        // Sometimes simfiles will contain both .sm and .ssc files for compatibility reasons,
+        // and we don't want to load the same song twice.
+
+        let alreadyExists: boolean = false;
+        for (let trackSet of trackSets)
         {
-          let newTrackSets = [
-            ...trackSets,
-            {
-              tracks: tracks,
-              songInfo: song,
-              selectedTrack: 0,
-            }
-          ];
-          newTrackSets.sort((a, b) => a.songInfo.title!.localeCompare(b.songInfo.title!));
-          return newTrackSets;
-        });
-        setPlaylistName(song.packName);
+          if (trackSet.songInfo.equals(song)) 
+          {
+            alreadyExists = true;
+            break;
+          }
+        }
+
+        if (alreadyExists === false)
+        {
+          let tracks = await search.searchSong(song, includeTranslit, includeCovers);
+
+          setTrackSets((trackSets) =>
+          {
+            let newTrackSets = [
+              ...trackSets,
+              {
+                tracks: tracks,
+                songInfo: song,
+                selectedTrack: 0,
+              }
+            ];
+            newTrackSets.sort((a, b) => a.songInfo.title!.localeCompare(b.songInfo.title!));
+            return newTrackSets;
+          });
+          setPlaylistName(song.packName);
+        }
       } catch (error)
       {
         console.log(`Error while loading song ${song.title}, `, error);
@@ -155,14 +177,6 @@ function App()
   };
 
   const onSongLoad = async (song: SmSongInfo) => {
-
-    for (let trackSet of trackSets)
-    {
-      if (trackSet.songInfo.equals(song)) // did we already load this song? then quit.
-      {
-        return;
-      }
-    }
     
     // force the loading bar to reset, since sometimes updateLoadingProgess() will fail
     if (isLoadingSongs == false) 
@@ -210,8 +224,6 @@ function App()
   {
     setTrackSets((trackSets) =>
     { 
-      // This needs to be done differently, because I'm making a copy of a big-ass array here.
-      // I don't know how the heck React projects are supposed to do this stuff
       let updatedTrackSets = [...trackSets];
       updatedTrackSets[trackSetIdx].selectedTrack = trackIdx;
       return updatedTrackSets;
@@ -227,6 +239,15 @@ function App()
             <Backdrop open={showInitialLoad} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1}}>
               <CircularProgress  />
             </Backdrop>
+            <InfoDialog isOpen={showInfo} close={() => { setShowInfo(false); }}/>
+            <Box display="flex" flexGrow={1} position="fixed" >
+              <IconButton title="Info" onClick={() => { setShowInfo(true); }}>
+                <InfoIcon />
+              </IconButton>
+              <IconButton href="https://github.com/mjvotaw/sm-to-playlist" target="_blank" title="View this project on Github">
+                <GitHub />
+                </IconButton>
+              </Box>
           <div className="drop-zone-container">
             <Paper variant="outlined">
               {
@@ -247,7 +268,9 @@ function App()
                         </Box>
                     <Divider />
                     <Box display="flex" gap="8px" sx={{ p: 1 }}>
-                      <FormControlLabel checked={includeTranslit} control={<Checkbox value={includeTranslit} onChange={() => { setIncludeTranslit(!includeTranslit); }} />} label="Include transliterated titles and artists" />
+                      <FormControlLabel checked={includeTranslit} control={<Checkbox value={includeTranslit} onChange={() => { setIncludeTranslit(!includeTranslit); }} />} label="Include 
+                      transliterated titles and artists" />
+                        <FormControlLabel checked={includeCovers} control={<Checkbox value={includeCovers} onChange={() => { setIncludeCovers(!includeCovers); }} />} label="Include song remixes/covers" />
                     </Box>
                   </Stack>
                   :
@@ -260,7 +283,6 @@ function App()
               }
           </Paper>
         </div>
-          
           <div className="track-list-container">
               <h3>Track List ({trackSets.length} Songs):</h3>
               <TrackList trackSets={trackSets} isLoadingSongs={isLoadingSongs} updateSelectedTrack={updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />

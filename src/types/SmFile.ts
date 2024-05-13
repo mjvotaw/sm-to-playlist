@@ -11,8 +11,7 @@ export class SmSongInfo
     packName: string = "";
     equals(other: SmSongInfo): boolean
     {
-        return this.filepath == other.filepath && this.packName == other.packName
-            && this.title === other.title && this.titleTranslit === other.titleTranslit
+        return this.title === other.title && this.titleTranslit === other.titleTranslit
             && this.subtitle === other.subtitle && this.subtitleTranslit === other.subtitleTranslit
             && this.artist === other.artist && this.artistTranslit === other.artistTranslit;
     }
