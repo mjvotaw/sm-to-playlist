@@ -15,7 +15,9 @@ export const TrackDisplayItem: React.FC<{
 }> = ({ track, songInfo }) => {
   const audioPlayer = useAudioPlayer();
 
-  const handlePlay = () => {
+  const handlePlay = () =>
+  {
+    console.log(songInfo);
     if (track && track.previewAudioUrl) {
       audioPlayer.setUrl(track.previewAudioUrl);
       audioPlayer.play();
@@ -73,11 +75,11 @@ export const TrackDisplayItem: React.FC<{
               >
                 {audioPlayer.currentUrl == track.previewAudioUrl &&
                   audioPlayer.isPlaying ? (
-                    <IconButton onClick={handleStop}>
+                    <IconButton onClick={handleStop} title="pause song preview">
                       <PauseCircleIcon fontSize="large"  />
                       </IconButton>
                 ) : (
-                    <IconButton onClick={handlePlay}>
+                    <IconButton onClick={handlePlay} title="play song preview">
                       <PlayCircleIcon fontSize="large" />
                     </IconButton>
                 )}

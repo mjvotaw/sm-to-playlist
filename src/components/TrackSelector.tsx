@@ -71,6 +71,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
           onClick={() => {
             handleRemoveTrackSet();
           }}
+          title={`Remove ${trackSet.songInfo.title} from playlist`}
         >
           <CancelIcon />
         </div>

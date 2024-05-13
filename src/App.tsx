@@ -6,7 +6,7 @@ import { Container, CircularProgress, Button, Grid, Paper, Stack, Divider, FormC
 import InfoIcon from '@mui/icons-material/Info';
 import GitHub  from "@mui/icons-material/GitHub";
 import { Playlist } from "@spotify/web-api-ts-sdk";
-import { SmSongInfo } from "./types/SmFile";
+import { SmSongInfo, getSampleSongs } from "./types/SmFile";
 import { Track, TrackSet } from './types/Track';
 import { useSpotifySearch } from "./search/SpotifySearch";
 import { SmFileDropZone } from "./components/SmFileDropZone";
@@ -14,6 +14,7 @@ import { CreatePlaylistPopup } from "./components/CreatePlaylistPopup";
 import { AudioPlayerProvider } from "./components/AudioPlayer";
 import { TrackList } from "./components/TrackList";
 import { InfoDialog } from "./components/InfoDialog";
+import SpotifyLogo from './assets/images/Spotify_Logo_RGB_Green.png';
 
 
 const darkTheme = createTheme({
@@ -233,6 +234,10 @@ function App()
   const loadSamples = () =>
   {
     setShowInfo(false);
+    setTrackSets([]);
+    let sampleSongs = getSampleSongs();
+    setIsLoadingSongs(true);
+    setSongQueue(sampleSongs);
   };
 
   return (
@@ -289,7 +294,7 @@ function App()
           </Paper>
         </div>
           <div className="track-list-container">
-              <h3>Track List ({trackSets.length} Songs):</h3>
+              <Box display="flex" justifyContent="space-between" ><h3>Track List ({trackSets.length} Songs):</h3> <img src={SpotifyLogo} style={{objectFit:"contain", width:95}} /></Box>
               <TrackList trackSets={trackSets} isLoadingSongs={isLoadingSongs} updateSelectedTrack={updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
             <Button variant="contained" size="large" disabled={trackSets.length == 0 || isLoadingSongs} onClick={() => { setShowCreatePlaylist(true); }}>Make Playlist!</Button>
           </div>
