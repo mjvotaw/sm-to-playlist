@@ -26,7 +26,7 @@ export class SpotifySearch
 
     private common_sm_words = [
         "(No CMOD)",
-        /^\[\d+\]/,
+        /^\[[\w\d]+?\]/,
     ];
 
      _isAuthenticated: boolean = false;

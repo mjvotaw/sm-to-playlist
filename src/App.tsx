@@ -230,6 +230,11 @@ function App()
     });
   }
 
+  const loadSamples = () =>
+  {
+    setShowInfo(false);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <AudioPlayerProvider>
@@ -239,7 +244,7 @@ function App()
             <Backdrop open={showInitialLoad} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1}}>
               <CircularProgress  />
             </Backdrop>
-            <InfoDialog isOpen={showInfo} close={() => { setShowInfo(false); }}/>
+            <InfoDialog isOpen={showInfo} close={() => { setShowInfo(false); }} loadSamples={loadSamples} />
             <Box display="flex" flexGrow={1} position="fixed" >
               <IconButton title="Info" onClick={() => { setShowInfo(true); }}>
                 <InfoIcon />
@@ -274,8 +279,8 @@ function App()
                     </Box>
                   </Stack>
                   :
-                  <Grid container display="flex" justifyContent="center" alignItems="center" sx={{ p: 4 }}>
-                    <Grid display="flex" justifyContent="center" alignItems="center" flexDirection="column" >
+                  <Grid container display="flex" justifyContent="center" alignItems="center" sx={{ p: 4, width: "70vh" }}>
+                    <Grid display="flex" justifyContent="center" alignItems="center" flexDirection="column" textAlign="center">
                       <h3>This app needs to access your Spotify account in order to search for content and create playlists.</h3>
                       <Button variant="contained" onClick={() => { handleAuth(); }}>Yes, you can connect to my Spotify account</Button>
                     </Grid>

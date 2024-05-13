@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, TextField, FormControl, FormControlLabel, FormGroup, FormLabel, Paper, InputBase, IconButton } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, TextField, FormControl, FormControlLabel, FormGroup, FormLabel, Paper, InputBase, IconButton, Box } from "@mui/material";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Playlist } from "@spotify/web-api-ts-sdk";
 
@@ -39,6 +39,8 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
     return (
         <Dialog
             open={open}
+            maxWidth="sm"
+            fullWidth={true}
         >
             <DialogTitle>Create Playlist</DialogTitle>
             {playlist && (
@@ -46,7 +48,7 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
                     <h3>Success!</h3>
                     <Paper
                     component="form"
-                    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: 400 }}
+                    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center' }}
                     >
                         <InputBase style={{flexGrow: 1}} value={playlist.external_urls.spotify} inputRef={playlistTextRef} />
                         <IconButton style={{marginLeft: "auto"}} onClick={handleCopy} title="Copy URL">
@@ -57,6 +59,7 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
                 )}
                 {!playlist && (
                 <DialogContent>
+                    <Box display="flex" flexDirection="column">
                     <FormControl>
                         <FormLabel>Playlist Name:</FormLabel>
                         <TextField  variant="outlined" value={playlistName}
@@ -68,6 +71,7 @@ export const CreatePlaylistPopup: React.FC<CreatePlaylistPopupProps> = ({ playli
                     <FormGroup>
                         <FormControlLabel checked={isPrivate} control={<Checkbox value={isPrivate} onChange={() => { setIsPrivate(!isPrivate);  }} />}  label="Make Playlist Private"/>
                     </FormGroup>
+                    </Box>
                 </DialogContent>
             )}
             {playlist && (

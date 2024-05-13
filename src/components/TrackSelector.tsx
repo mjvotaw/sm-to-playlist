@@ -49,7 +49,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
       <Box position="relative" display="flex" flexDirection="column" alignItems="center" padding={2}>
 
         <Typography variant="body2" alignSelf="flex-start">
-          Results for "{trackSet.songInfo.title} {trackSet.songInfo.subtitle}"<br />by {trackSet.songInfo.artist}:
+          Results for {trackSet.songInfo.title} {trackSet.songInfo.subtitle}<br />by {trackSet.songInfo.artist}:
         </Typography>
 
         
