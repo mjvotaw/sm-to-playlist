@@ -2,7 +2,6 @@ import { AuthorizationCodeWithPKCEStrategy, Playlist, SpotifyApi, Track as Spoti
 import gestaltSimilarity from "gestalt-pattern-matcher";
 import { SmSongInfo } from '../types/SmFile';
 import { Track } from '../types/Track';
-import React from 'react';
 
 const client_id:string = process.env.REACT_APP_SPOTIFY_CLIENT_ID ?? "";
 const redirect_url:string = process.env.REACT_APP_SPOTIFY_REDIRECT ?? "";
@@ -12,10 +11,16 @@ export class SpotifySearch
 
     api: SpotifyApi;
 
-    private WHOLE_SCORE_WEIGHT = 0.2;
     private FULL_TITLE_WEIGHT = 1.0;
-    private JUST_TITLE_WEIGHT = 0.2;
-    private ARTIST_WEIGHT = 1.0;
+    private NO_SUBTITLE_WEIGHT = 0.3;
+    private ALL_ARTISTS_WEIGHT = 1.0;
+    private MAIN_ARTIST_WEIGHT = 0.5;
+
+    private MAX_COUNT = 10;
+    private MIN_SCORE_CUTOFF = 0.8;
+    private MIN_TITLE_CUTOFF = 0.3;
+    private MIN_ARTIST_CUTOFF = 0.7;
+    private NEARLY_PERFECT_MATCH = 1.95;
 
     private searchCache: { [id: string]: Track[] } = {};
 
@@ -56,7 +61,7 @@ export class SpotifySearch
 
     
     
-    async searchSong(song: SmSongInfo, includeTranslit: boolean, scoreCutoff: number = 1.3, maxCount: number = 10): Promise<Track[]>
+    async searchSong(song: SmSongInfo, includeTranslit: boolean, includeCovers: boolean): Promise<Track[]>
     {
         if (song.title === null || song.artist === null)
         {
@@ -77,12 +82,7 @@ export class SpotifySearch
             ];
         }
 
-        tracks = tracks.sort((a, b) =>
-        { 
-            return b.similarityScore - a.similarityScore
-        });
-
-        let filteredTracks = tracks.filter((t) => t.similarityScore > scoreCutoff);
+        let filteredTracks = this.filterTracks(tracks, includeCovers);
         return filteredTracks;
     }
 
@@ -105,24 +105,25 @@ export class SpotifySearch
     private async search(title: string, subtitle: string, artist: string): Promise<Track[]>
     {
         // Strip out some things that are only useful in Stepmania,
-        // and reorganize the artist info so that the artists are listed alphabetically
+        // and split artists to remove delimeters
         title = this.stripCommonSMWords(title);
         subtitle = this.stripCommonSMWords(subtitle);
-        artist = this.splitArtist(artist).join(" ");
+        let search_artists = this.splitArtist(artist);
+        let joined_artists = search_artists.join(" ");
 
-        let maybeCachedResults = this.getCachedResults(title, subtitle, artist);
+        let maybeCachedResults = this.getCachedResults(title, subtitle, joined_artists);
         if (maybeCachedResults)
         {
             return maybeCachedResults;
         }
-        let results = await this.api.search(`${title} ${subtitle}, ${artist}`, ["track"]);
+        let results = await this.api.search(`${title} ${subtitle}, ${joined_artists}`, ["track"]);
         let spottracks = results.tracks.items;
 
         let tracks = spottracks.map((track) =>
         {
+            let [titleScore, artistScore] = this.scoreTrack(track, title, subtitle, search_artists);
             let imageUrl = track.album.images.length > 0 ? track.album.images[0].url : null;
             let artists = track.artists.map(a => { return { name: a.name, link: a.external_urls.spotify }; });
-            let [titleScore, artistScore] = this.scoreTrack(track, title, subtitle, artist);
 
             let t: Track = {
                 name: track.name,
@@ -142,36 +143,63 @@ export class SpotifySearch
             return t;
         });
 
-        this.setCachedResults(title, subtitle, artist, tracks);
+        this.setCachedResults(title, subtitle, joined_artists, tracks);
         return tracks;
     }
 
-    private scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artist: string): [number, number]
+    private scoreTrack(track: SpotifyTrack, searched_title: string, searched_subtitle: string, searched_artists: string[]): [number, number]
     {
         let item_title = track.name;
-        let item_artist = track.artists.map(a => a.name).join(" ");
-        return this.score(item_title, item_artist, searched_title, searched_subtitle, searched_artist);
+        let item_artists = track.artists.map(a => a.name);
+        return this.score(item_title, item_artists, searched_title, searched_subtitle, searched_artists);
     }
 
-    // Determining a match score is slightly delicate
-    private score(item_title: string, item_artist: string, searched_title: string, searched_subtitle: string, searched_artist: string): [number, number]
+    // Determining a match score is slightly delicate. We don't want to throw out songs that
+    // are a good enough match, such as alternate versions of the song by the same main artist,
+    // or covers/remixes, while still removing songs that definitely aren't a good match, 
+    // such as songs that just happen to have the same name, or unrelated songs from the same artist.
+    //
+    // Currently, this takes several similarity scores into consideration:
+    // - a "full title" score: the item's title compared to the simfile's title + subtitle
+    // - a "just title" score: if the simfile has a subtitle, compare the item title to just the simfile's title.
+    //   This is weighted to provide only a very slight boost to the title score.
+    // - an "all artists" score: All of the item's artists compared to the simfile's artists.
+    //   Both lists are sorted alphabetically and joined into a string with a single space " " delimiter.
+    // - a "just main artist" score: Takes the first artist from both lists and compares them.
+    //   this is weighted to provide a 50% boost to the artist score.
+    //
+    // As it stands right now, a perfect score would be
+    // FULL_TITLE_WEIGHT +  ALL_ARTISTS_WEIGHT + MAIN_ARTIST_WEIGHT = 2.5
+    // or for songs that have a subtitle
+    // FULL_TITLE_WEIGHT + JUST_TITLE_WEIGHT + ALL_ARTISTS_WEIGHT + MAIN_ARTIST_WEIGHT = 2.8
+
+    private score(item_title: string, item_artists: string[], searched_title: string, searched_subtitle: string, searched_artists: string[]): [number, number]
     {
         item_title = item_title.toLowerCase();
-        item_artist = item_artist.toLowerCase();
+        item_artists = item_artists.map(a => a.toLowerCase());
         searched_title = searched_title.toLowerCase();
         searched_subtitle = searched_subtitle.toLowerCase();
-        searched_artist = searched_artist.toLowerCase();
+        searched_artists = searched_artists.map(a => a.toLowerCase());
+
+        
+        let joined_item_artists = item_artists.toSorted((a, b) => a.localeCompare(b)).join(" ");
+        let joined_search_artists = searched_artists.toSorted((a, b) => a.localeCompare(b)).join(" ");
 
         let full_title = `${searched_title} ${searched_subtitle}`.trim();
 
-        let trackScore = gestaltSimilarity(item_title, full_title) * this.FULL_TITLE_WEIGHT;
-        let artistScore = gestaltSimilarity(item_artist, searched_artist) * this.ARTIST_WEIGHT;
+        let fullTitleScore = gestaltSimilarity(item_title, full_title) * this.FULL_TITLE_WEIGHT;
+        let allArtistScore = gestaltSimilarity(joined_item_artists, joined_search_artists) * this.ALL_ARTISTS_WEIGHT;
+        let mainArtistScore = gestaltSimilarity(item_artists[0], searched_artists[0]) * this.MAIN_ARTIST_WEIGHT;
 
+        let justTitleScore = 0;
         if (searched_subtitle.length > 0)
         {
-            trackScore += gestaltSimilarity(item_title, searched_title) * this.JUST_TITLE_WEIGHT;    
+            justTitleScore += gestaltSimilarity(item_title, searched_title) * this.NO_SUBTITLE_WEIGHT;    
         }
-        return [trackScore, artistScore];
+
+        let artistScore = allArtistScore + mainArtistScore;
+        let titleScore = fullTitleScore + justTitleScore;
+        return [titleScore, artistScore];
     }
 
     private chunkTracks(tracks:Track[], size: number): Track[][] {
@@ -206,17 +234,21 @@ export class SpotifySearch
         return stripped_str.trim();
     }
     
+    // An "artist" tag might actually be several artists ("Srezcat [feat. blaxervant & Shinonome I/F]")
+    // We need to split this up into multiple artist names so that we can provide a better search query
+    // and to provide more accurate scoring.
+    // We don't sort this list here, because we want to preserve the order of the artists,
+    // the assumption being that the first artist is the main artist of the song.
     private splitArtist(artist: string): string[]
     {
-        // An "artist" tag might actually be several artists ("Srezcat [feat. blaxervant & Shinonome I/F]")
-        // in order to get meaningful genres, we need to split this up into multiple artist names
+        
         let originalArtist = artist;
         let separators = [" & ", " + ", " feat. ", " feat ", " ft. ", "vs. ", " vs ", ", ", " + ", " x "];
         let replacement_separator = "----";
         artist = artist.replace("(", "").replace(")", "").replace("[", "").replace("]", "");
         artist = artist.toLowerCase();
 
-        for (let sep in separators)
+        for (let sep of separators)
         {
             artist = artist.replaceAll(sep, replacement_separator);
         }
@@ -226,8 +258,43 @@ export class SpotifySearch
         {
             return [originalArtist];
         }
-        split_artists.sort((a, b) => a.localeCompare(b));
         return split_artists;
+    }
+
+    // Much like scoring, filtering tracks can be difficult.
+    // First, we have a bare minimum MIN_SCORE_CUTOFF, to remove tracks that are just way off base.
+    // Then, we filter out songs that have a very poor title similarity.
+    // These are usually tracks that match the artist exactly, but have a title isn't actually similar at all.
+    // And then, if includeCovers == false, we want to remove tracks that don't meet some MIN_ARTIST_CUTOFF,
+    // to remove tracks that probably just have the same name.
+    // And finally, we cut the list down to at most MAX_COUNT tracks.
+    // If we have any tracks that are over NEARLY_PERFECT_MATCH, then return even fewer results,
+    // because the highest scoring track is almost certainly the correct one.
+    // It's not really necessary, but it just makes the results look better.
+    private filterTracks(tracks: Track[], includeCovers: boolean): Track[]
+    {
+        tracks = tracks.sort((a, b) =>
+        { 
+            return b.similarityScore - a.similarityScore
+        });
+
+        let filteredTracks = tracks.filter((t) => t.similarityScore > this.MIN_SCORE_CUTOFF);
+        filteredTracks = filteredTracks.filter((t) => t.titleSimilarityScore > this.MIN_TITLE_CUTOFF);
+        if (!includeCovers)
+        {
+            filteredTracks = filteredTracks.filter((t) => t.artistSimilarityScore > this.MIN_ARTIST_CUTOFF);
+        }
+
+        // If we have a track that is almost certainly an exact match, don't bother showing them a ton of options.
+        if (filteredTracks.length > 0 && filteredTracks[0].similarityScore >= this.NEARLY_PERFECT_MATCH)
+        {
+            filteredTracks = filteredTracks.slice(0, this.MAX_COUNT / 2);    
+        }
+        else
+        {
+            filteredTracks = filteredTracks.slice(0, this.MAX_COUNT);
+        }
+        return filteredTracks;
     }
 }
 
