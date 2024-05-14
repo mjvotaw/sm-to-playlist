@@ -48,8 +48,13 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
     <Paper>
       <Box position="relative" display="flex" flexDirection="column" alignItems="center" padding={2}>
 
+        <Typography variant="body2" alignSelf="flex-start"
+          title={`Results for ${trackSet.songInfo.title} ${trackSet.songInfo.subtitle}`}
+          style={{ overflow: "hidden", textOverflow: "ellipsis", textWrap: "nowrap", maxWidth: "90%" }}>
+          Results for {trackSet.songInfo.title} {trackSet.songInfo.subtitle}
+        </Typography>
         <Typography variant="body2" alignSelf="flex-start">
-          Results for {trackSet.songInfo.title} {trackSet.songInfo.subtitle}<br />by {trackSet.songInfo.artist}:
+          by {trackSet.songInfo.artist}:
         </Typography>
 
         
@@ -64,7 +69,7 @@ export const TrackSelector: React.FC<TrackSelectorProps> = ({
           )}
 
 
-          <Pagination count={trackSet.tracks.length} page={trackSet.selectedTrack + 1} onChange={(event, page) => { handleUpdateSelectedTrack(page - 1); }} />
+          <Pagination count={trackSet.tracks.length} page={trackSet.selectedTrack + 1} size="small" onChange={(event, page) => { handleUpdateSelectedTrack(page - 1); }} />
 
           <div
           className="close-button"

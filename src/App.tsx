@@ -257,9 +257,9 @@ function App()
               <IconButton href="https://github.com/mjvotaw/sm-to-playlist" target="_blank" title="View this project on Github">
                 <GitHub />
                 </IconButton>
-              </Box>
-          <div className="drop-zone-container">
-            <Paper variant="outlined">
+            </Box>
+            
+            <Paper variant="outlined" style={{marginLeft: "auto", marginRight: "auto", alignSelf: "center"}}>
               {
                 isAuthenticated ?
                     <Stack>
@@ -284,15 +284,16 @@ function App()
                     </Box>
                   </Stack>
                   :
-                  <Grid container display="flex" justifyContent="center" alignItems="center" sx={{ p: 4, width: "70vh" }}>
+                  <Grid container display="flex" justifyContent="center" alignItems="center" sx={{ p: 4, width: "100%" }}>
                     <Grid display="flex" justifyContent="center" alignItems="center" flexDirection="column" textAlign="center">
                       <h3>This app needs to access your Spotify account in order to search for content and create playlists.</h3>
                       <Button variant="contained" onClick={() => { handleAuth(); }}>Yes, you can connect to my Spotify account</Button>
                     </Grid>
                   </Grid>
               }
-          </Paper>
-        </div>
+            </Paper>
+            
+          <Divider orientation="vertical" flexItem />
           <div className="track-list-container">
               <Box display="flex" justifyContent="space-between" ><h3>Track List ({trackSets.length} Songs):</h3> <img src={SpotifyLogo} style={{objectFit:"contain", width:95}} /></Box>
               <TrackList trackSets={trackSets} isLoadingSongs={isLoadingSongs} updateSelectedTrack={updateSelectedTrack} removeTrackSet={handleRemoveTrackSet} />
