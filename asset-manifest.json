@@ -1,15 +1,22 @@
 {
   "files": {
-    "main.css": "/sm-to-playlist/static/css/main.31f3377b.css",
-    "main.js": "/sm-to-playlist/static/js/main.ddc4e74c.js",
+    "main.css": "/sm-to-playlist/static/css/main.9b5e2030.css",
+    "main.js": "/sm-to-playlist/static/js/main.1cb6148c.js",
     "static/js/453.3f622384.chunk.js": "/sm-to-playlist/static/js/453.3f622384.chunk.js",
+    "static/media/Spotify_Logo_RGB_Green.png": "/sm-to-playlist/static/media/Spotify_Logo_RGB_Green.0c4ae91bae23217d39c9.png",
+    "static/media/right-results.png": "/sm-to-playlist/static/media/right-results.63f967eb50d08f2ef491.png",
+    "static/media/wrong-results.png": "/sm-to-playlist/static/media/wrong-results.79ba80e90322e4b28911.png",
+    "static/media/dropzone.png": "/sm-to-playlist/static/media/dropzone.57207888268608493014.png",
+    "static/media/make-playlist.png": "/sm-to-playlist/static/media/make-playlist.759abcf5f205be5ea1d1.png",
+    "static/media/make-playlist-success.png": "/sm-to-playlist/static/media/make-playlist-success.9d165d1fd8d52fc44a9e.png",
+    "static/media/no-results.png": "/sm-to-playlist/static/media/no-results.dcd283e2ee8aa22ac820.png",
     "index.html": "/sm-to-playlist/index.html",
-    "main.31f3377b.css.map": "/sm-to-playlist/static/css/main.31f3377b.css.map",
-    "main.ddc4e74c.js.map": "/sm-to-playlist/static/js/main.ddc4e74c.js.map",
+    "main.9b5e2030.css.map": "/sm-to-playlist/static/css/main.9b5e2030.css.map",
+    "main.1cb6148c.js.map": "/sm-to-playlist/static/js/main.1cb6148c.js.map",
     "453.3f622384.chunk.js.map": "/sm-to-playlist/static/js/453.3f622384.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.31f3377b.css",
-    "static/js/main.ddc4e74c.js"
+    "static/css/main.9b5e2030.css",
+    "static/js/main.1cb6148c.js"
   ]
 }
