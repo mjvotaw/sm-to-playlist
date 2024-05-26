@@ -80,9 +80,11 @@ For example, it tends to fail if the specific song/artist combination aren't ava
 
 
 If "Include transliterated  titles and artists" is checked, results in non-English languages might get buried by English language tracks:
+
 ![Buried Result](readme-assets/images/not-great-result-3.png "The correct selection is buried")
 
 And sometimes, it's just...way off:
+
 ![Completely wrong](readme-assets/images/bad-result-1.png "Sometimes the results are completely wrong")
 
 I suspect that a lot of these failures are due to limitations of the pattern matching algorithm I'm using. For short strings, any similarities end up with scoring relatively high, and most song titles tend to be pretty short.
